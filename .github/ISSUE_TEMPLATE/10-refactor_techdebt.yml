@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+name: 🧹 Refactor / tech debt
+description: An internal cleanup with no user-visible behaviour change.
+title: "[Refactor]: "
+labels: ["refactor", "tech-debt", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For internal-quality work: simplification, deduplication, structural
+        cleanup, debt paydown. If foundations are broken (non-compiling proofs,
+        false "done"), file those first — fixes precede features.
+
+  - type: textarea
+    id: current
+    attributes:
+      label: Current state
+      description: What is awkward, duplicated, or fragile? Point at the code.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed change
+      description: The cleaner shape. Confirm it is behaviour-preserving.
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Why now
+      description: What does this unblock or de-risk?
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before submitting
+      options:
+        - label: This is behaviour-preserving (or I've flagged where it isn't).
+          required: true
+        - label: I searched existing issues for this.
+          required: true

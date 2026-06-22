@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+name: 🔧 Build / CI / tooling
+description: A build break, CI failure, required-check deadlock, or toolchain/reproducibility problem.
+title: "[Build]: "
+labels: ["build", "ci", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For broken builds, flaky or stuck CI, required-status-check deadlocks,
+        and Guix / reproducibility issues. (This estate is **Guix-only** — please
+        do not propose Nix-based fixes.)
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of problem
+      options:
+        - Build fails locally
+        - CI job fails
+        - Required check is stuck / deadlocked (PR can never go green)
+        - Reproducibility (Guix / pinned toolchain) problem
+        - Toolchain / dependency setup
+        - Other tooling issue
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens
+      description: Command run and what failed. Paste exact output.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: false
+
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "e.g. WSL2 / Fedora 43, Guix on Foreign Distro, idris2 0.7, just 1.34"
+    validations:
+      required: false
+
+  - type: input
+    id: ref
+    attributes:
+      label: Branch / commit / run URL
+      placeholder: "main@abc1234, or the failing Actions/GitLab run URL"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for this failure.
+          required: true
+        - label: If this is a required-check deadlock, I noted the exact check name vs the protection rule.
+          required: false

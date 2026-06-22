@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+#
+# Organization-wide default issue-template chooser for hyperpolymath/*.
+# This file is inherited by every repository that does NOT define its own
+# .github/ISSUE_TEMPLATE/config.yml. See ../../README.md for the rules.
+#
+# NOTE: contact_links are STATIC urls — they cannot be rewritten per target
+# repository. They therefore point at org-central resources, not per-repo ones.
+
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions (questions, ideas, show-and-tell)
+    url: https://github.com/hyperpolymath/.github/discussions
+    about: For open-ended questions and conversations, please use Discussions rather than opening an issue.
+  - name: 🔒 Report a security vulnerability (private)
+    url: https://github.com/hyperpolymath/.github/blob/main/SECURITY.md
+    about: Do NOT open a public issue for security problems. Follow the coordinated-disclosure policy here.

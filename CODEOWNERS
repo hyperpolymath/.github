@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+#
+# CODEOWNERS for hyperpolymath/.github
+# Note: CODEOWNERS is NOT inherited org-wide — it governs review on THIS repo only.
+# See: https://docs.github.com/articles/about-code-owners
+
+# Everything here is maintainer-reviewed: changes cascade to every repository in
+# the organization, so review is deliberately centralised.
+*                                   @hyperpolymath
+
+# High-blast-radius surface — templates and policy
+/.github/ISSUE_TEMPLATE/            @hyperpolymath
+/.github/DISCUSSION_TEMPLATE/       @hyperpolymath
+/SECURITY.md                        @hyperpolymath
+/CODE_OF_CONDUCT.md                 @hyperpolymath
+/GOVERNANCE.md                      @hyperpolymath

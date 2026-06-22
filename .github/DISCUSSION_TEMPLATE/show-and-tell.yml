@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+# Filename MUST match the category slug ("show-and-tell").
+title: "[Show]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Built something with this project? Share it! Demos, write-ups,
+        experiments, and "look what I made" are all welcome.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What you made
+      description: Tell us what it is and what it does.
+    validations:
+      required: true
+
+  - type: input
+    id: link
+    attributes:
+      label: Link
+      description: Repo, demo, blog post, screenshot.
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Anything interesting about how you built it, or feedback you'd like.
+    validations:
+      required: false

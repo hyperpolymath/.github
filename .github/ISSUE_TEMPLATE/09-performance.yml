@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+name: ⚡ Performance
+description: A slowdown, regression, or excessive resource use.
+title: "[Perf]: "
+labels: ["performance", "triage"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: What is slow / heavy
+      description: Operation, workload, and the symptom (latency, throughput, memory, build time).
+    validations:
+      required: true
+
+  - type: textarea
+    id: measurement
+    attributes:
+      label: Measurement
+      description: Numbers, please — timings, profiles, flamegraphs. Include how you measured.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: baseline
+    attributes:
+      label: Baseline vs now
+      description: If this is a regression, the last-known-good version and the slow one.
+      placeholder: "good: v1.2.0 (~120ms) → bad: main@abc1234 (~1.8s)"
+    validations:
+      required: false
+
+  - type: input
+    id: env
+    attributes:
+      label: Environment / hardware
+      placeholder: "e.g. WSL2, 8 cores, 16GB; release build"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before submitting
+      options:
+        - label: I included reproducible measurements, not just a subjective impression.
+          required: true
+        - label: I searched existing issues for this.
+          required: true

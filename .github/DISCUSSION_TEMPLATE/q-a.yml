@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+# Filename MUST match the category slug. Default "Q&A" -> slug "q-a".
+title: "[Q&A]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ask the community a question. Mark an answer once you get one — it helps
+        the next person who searches for the same thing.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What would you like to know? Be specific.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What are you trying to do, and what have you already tried?
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      placeholder: "e.g. v1.2.3, main@HEAD"
+    validations:
+      required: false

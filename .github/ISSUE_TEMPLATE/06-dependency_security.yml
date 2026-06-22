@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+name: 🛡️ Dependency / advisory
+description: A vulnerable or outdated dependency, or a PUBLISHED advisory (CVE/RUSTSEC) to track.
+title: "[Deps]: "
+labels: ["dependencies", "security", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **Do NOT use this for an UNDISCLOSED vulnerability you have found in
+        this project.** For that, follow the private coordinated-disclosure path
+        in [SECURITY.md](https://github.com/hyperpolymath/.github/blob/main/SECURITY.md).
+
+        Use this template to track a *published* advisory affecting a dependency,
+        or to flag a dependency that needs bumping.
+
+  - type: input
+    id: advisory
+    attributes:
+      label: Advisory ID
+      description: CVE, GHSA, or RUSTSEC identifier, if one exists.
+      placeholder: "e.g. RUSTSEC-2024-0336, GHSA-xxxx-xxxx-xxxx, CVE-2024-12345"
+    validations:
+      required: false
+
+  - type: input
+    id: package
+    attributes:
+      label: Affected dependency
+      placeholder: "e.g. rustls-webpki, openssl, lodash"
+    validations:
+      required: true
+
+  - type: input
+    id: versions
+    attributes:
+      label: Affected / fixed versions
+      placeholder: "affected < 0.102.2, fixed in 0.102.2"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: depth
+    attributes:
+      label: Direct or transitive?
+      options:
+        - Direct dependency
+        - Transitive dependency
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: Details / link
+      description: Link to the advisory and a note on exposure in this project.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before submitting
+      options:
+        - label: This advisory is PUBLIC — I am not disclosing a non-public vulnerability here.
+          required: true
+        - label: I searched existing issues for this advisory.
+          required: true

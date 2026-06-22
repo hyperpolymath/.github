@@ -1,0 +1,111 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+name: 🐛 Bug report
+description: Something is broken or behaves incorrectly.
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. A good report is reproducible:
+        the smaller and more deterministic the repro, the faster it gets fixed.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: A clear, concise description of what the bug is.
+      placeholder: When I do X, Y happens instead of Z.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Minimal, deterministic steps. Include exact commands and inputs.
+      placeholder: |
+        1. Go to '...'
+        2. Run command '...'
+        3. See error
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      placeholder: I expected X to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What actually happened. Paste full error output where possible.
+      placeholder: Instead, Y happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / backtrace
+      description: Relevant logs or stack traces. This is rendered as code, so no backticks needed.
+      render: shell
+    validations:
+      required: false
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Low (cosmetic / minor inconvenience)
+        - Medium (impaired, workaround exists)
+        - High (major functionality broken)
+        - Critical (data loss, security, total failure)
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      placeholder: "e.g. v1.2.3, commit abc1234, main@HEAD"
+    validations:
+      required: true
+
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: OS, runtime, and toolchain versions relevant to the bug.
+      placeholder: "e.g. Fedora 43 / WSL2, Idris2 0.7, Rust 1.87, Guix on Foreign Distro"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      validations:
+        required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: I am on a supported version (latest main or a tagged release).
+          required: false
+        - label: I would be willing to open a PR to fix this.
+          required: false

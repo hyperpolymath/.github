@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+# Filename MUST match the category slug ("ideas").
+title: "[Idea]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share an idea before it's a fully-formed feature request. Half-baked is
+        welcome here — that's what the conversation is for.
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What would you like to see?
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What problem would this solve? Who benefits?
+    validations:
+      required: true
+
+  - type: textarea
+    id: sketch
+    attributes:
+      label: Rough sketch (optional)
+      description: Any thoughts on how it might work.
+    validations:
+      required: false

@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+name: 📖 Documentation
+description: Something in the docs is wrong, missing, unclear, or out of date.
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Docs are part of the product. Stale or misleading documentation is a bug.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of documentation issue
+      options:
+        - Incorrect / misleading
+        - Missing / incomplete
+        - Out of date (drifted from the code)
+        - Unclear / confusing
+        - Broken link or example
+        - Typo / formatting
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Where
+      description: File path, URL, or section heading.
+      placeholder: "e.g. README.md §Install, docs/ROADMAP.adoc, the AFFIRMATION.adoc"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong
+      description: Quote the current text if helpful.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix
+      description: What should it say instead?
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for this.
+          required: true
+        - label: I would be willing to open a PR with the fix.
+          required: false

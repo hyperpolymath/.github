@@ -1,0 +1,64 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+name: 🪞 Affirmation / claim drift
+description: A public claim (README, blurb, badge) overstates what the code actually does.
+title: "[Drift]: "
+labels: ["affirmation", "documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This estate keeps an **AFFIRMATION** discipline: a dated, ground-truthed
+        honesty snapshot of what is actually true. This template is for reporting
+        a gap between a *public claim* and *reality* — e.g. a blurb says
+        "formally verified" while the proofs don't compile, or a badge overstates
+        coverage. Reporting drift is the convention working, not an attack.
+
+  - type: textarea
+    id: claim
+    attributes:
+      label: The claim
+      description: Quote the public claim verbatim and say where it appears.
+      placeholder: '"cannot crash — formally verified" — README.md badge / Sponsors blurb'
+    validations:
+      required: true
+
+  - type: textarea
+    id: reality
+    attributes:
+      label: The reality
+      description: What is actually true, established by running the tool or reading the AFFIRMATION.
+      placeholder: "MODULE-STATUS shows 4/37 proven; the rest are safe-only. idris2 output attached."
+    validations:
+      required: true
+
+  - type: input
+    id: source
+    attributes:
+      label: Ground-truth source
+      description: How did you establish reality? (tool run, AFFIRMATION.adoc, MODULE-STATUS …)
+      placeholder: "idris2 --typecheck on main@abc1234; AFFIRMATION.adoc dated 2026-06-16"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: amplified
+    attributes:
+      label: Is the claim currently amplified?
+      description: e.g. featured on Sponsors, pinned, in a release announcement.
+      options:
+        - "No — internal docs only"
+        - "Yes — it is publicly amplified"
+        - "Not sure"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before submitting
+      options:
+        - label: I established reality by ground truth (ran the tool / read the AFFIRMATION), not by inference.
+          required: true
+        - label: I am reporting drift, not asserting bad faith.
+          required: true

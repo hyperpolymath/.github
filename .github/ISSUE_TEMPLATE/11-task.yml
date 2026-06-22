@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+name: 📋 Task / other
+description: A tracked piece of work that doesn't fit the other templates.
+title: "[Task]: "
+labels: ["triage"]
+body:
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Chore / maintenance
+        - Research / spike
+        - Design / ADR
+        - Licensing / compliance question
+        - Ecosystem / integration
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What needs doing, and what does "done" look like?
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Rationale
+      description: Why does this matter? What's the cost of not doing it?
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues to avoid duplicates.
+          required: true

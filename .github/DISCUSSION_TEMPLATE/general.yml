@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+# Filename MUST match the category slug ("general").
+title: ""
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For anything that doesn't fit Q&A, Ideas, or Show-and-tell. Please keep
+        it on-topic and follow the Code of Conduct.
+
+  - type: textarea
+    id: body
+    attributes:
+      label: What's on your mind?
+    validations:
+      required: true

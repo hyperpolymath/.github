@@ -1,0 +1,91 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+name: 🕳️ Soundness hole
+description: A type-soundness / borrow / resource / proof false-negative. Highest priority.
+title: "[Hole]: "
+labels: ["soundness", "priority: high", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Soundness holes come before everything else.** A program the checker
+        *accepts* but should *reject* (use-after-move, escaping borrow, a proof
+        that type-checks but is vacuous, a false "verified") is a foundation
+        crack, not a feature bug. File it even if you only half-understand it.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of hole
+      options:
+        - Type-soundness false-negative (accepts an ill-typed program)
+        - Use-after-move / linearity violation
+        - Borrow / lifetime escape
+        - Resource / grade / affinity violation
+        - Vacuous or unsound proof (compiles but proves nothing / proves false)
+        - Stale "verified" / "proven" claim contradicted by the tool
+        - Other unsoundness
+    validations:
+      required: true
+
+  - type: textarea
+    id: witness
+    attributes:
+      label: Minimal witness
+      description: The smallest program/proof that exhibits the hole. Exact source, please.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What the checker SHOULD do
+      description: Why is this program ill-typed / why should it be rejected?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What the tool actually does
+      description: Paste the exact tool output (idris2 / cargo / coqc / agda …). Ground truth, not status docs.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: tool
+    attributes:
+      label: Tool & version
+      placeholder: "e.g. idris2 0.7.0, rustc 1.87, coqc 8.19, agda 2.6.4"
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      placeholder: "main@abc1234"
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Blast radius
+      description: What downstream guarantees does this invalidate? Which claims become false?
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before submitting
+      options:
+        - label: I confirmed this by RUNNING the tool, not by reading status docs.
+          required: true
+        - label: I searched existing issues for this hole.
+          required: true
+        - label: I kept probing for related holes after finding this one.
+          required: false

@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+# Filename MUST match the category slug ("announcements").
+# This category is typically maintainer-only; the form keeps releases consistent.
+title: "[Announcement]: "
+labels: []
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - Release
+        - Deprecation / breaking change
+        - Roadmap update
+        - Project news
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What's happening, in one or two sentences.
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: Details
+      description: Changelog, migration notes, links.
+    validations:
+      required: false
