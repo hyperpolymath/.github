@@ -2,10 +2,10 @@
 # Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 #
 # Default funding links for hyperpolymath/* (inherited by repos without their own).
-# Uncomment and fill in only the handles you actually use. Leaving this commented
-# means no "Sponsor" button is shown by default.
-#
-# github: [hyperpolymath]
-# ko_fi: <username>
-# liberapay: <username>
-# custom: ["https://..."]
+# Canonical estate handles (used across ~1000 repos). A repository may override
+# this with its own .github/FUNDING.yml.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+github: hyperpolymath
+ko_fi: hyperpolymath
+liberapay: hyperpolymath
