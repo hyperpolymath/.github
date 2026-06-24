@@ -99,6 +99,21 @@ body:
         required: false
 
   - type: checkboxes
+    id: troubleshooting
+    attributes:
+      label: Troubleshooting already attempted
+      description: Tick anything you've already tried — it narrows the cause and avoids back-and-forth.
+      options:
+        - label: Reproduced on the latest `main` (not a stale checkout).
+          required: false
+        - label: Tried a clean rebuild / cleared caches / fresh environment.
+          required: false
+        - label: Reproduced with a minimal config or default settings.
+          required: false
+        - label: Checked the README, CHANGELOG, and existing docs.
+          required: false
+
+  - type: checkboxes
     id: checklist
     attributes:
       label: Before submitting
