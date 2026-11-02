@@ -13,6 +13,7 @@ WF_DIR="$ROOT/.github/workflows"
 LOCK="$WF_DIR/actions.lock"
 failures=0
 
+# Report a contract violation to stderr and count it for the final exit status.
 fail() {
   printf 'ERROR: %s\n' "$*" >&2
   failures=$((failures + 1))
