@@ -121,6 +121,11 @@ owner before the repair landed, so PR #25 is a follow-up repair to `main`,
 not a replacement for an open PR. No admin bypass, force-push, or
 required-context removal is used by this session.
 
+The conflict with merged PR #24 was reconciled without rewriting history:
+the two conflicting files were temporarily aligned with `main`, GitHub's
+`updatePullRequestBranch` MERGE created verified merge commit `5aba1a4`, and
+a follow-up signed commit reapplied the repaired lockfile and inline SHA.
+
 == 2. Issue #13 / D199
 
 D199 adopts automated rebase-onto-base recovery after squash merges. The
