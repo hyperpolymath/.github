@@ -38,9 +38,17 @@ however, stale in two ways: `main` still locked smtp-notify-action v0.3.0 while
 the workflow used v0.5.0, and PR #24's inline comment still named the v0.2.0
 commit `ede1191ef6ff3ac02c4f4d9efdf837ee517e11d7`.
 
+PR #24 was merged by the repository owner at 2026-11-02 19:18 UTC as
+`f0f7896e4fd8a05e533a59dc4ee88aaa136fc523`. The merge did not repair the
+caller: post-merge Secret Scanner run
+https://github.com/hyperpolymath/.github/actions/runs/41508702476[41508702476]
+also completed with `failure` and zero jobs. `main` therefore remained broken
+after the dependency bump landed.
+
 === Source repair
 
-This branch carries forward PR #24's dependency bump and repairs the source:
+PR #25 is the follow-up repair. It keeps the v0.5.1 dependency bump already
+merged by PR #24 and repairs the source:
 
 * `.github/workflows/secret-scanner.yml` now calls
   `metadatastician/standards/.github/workflows/secret-scanner-reusable.yml`
@@ -48,15 +56,20 @@ This branch carries forward PR #24's dependency bump and repairs the source:
 * The caller grants only `contents: read` and no longer uses
   `secrets: inherit`; the pinned reusable declares no secrets.
 * `.github/workflows/actions.lock` records smtp-notify-action v0.5.1 at
-  `e384daf6167a7a7567642d6a62060106244d2413`, keeps the checkout pin, and
-  records the through-reusable checkout dependency.
-* `.github/workflows/actions-lock.closure.tsv` records the reviewed remote
-  reusable closure.
+  `e384daf6167a7a7567642d6a62060106244d2413` and the checkout pin used by
+  `workflow-contracts.yml`. The reusable-only Secret Scanner caller has an
+  empty lock entry: `gh-actions-lock` v0.4.0 does not follow remote job-level
+  reusable workflows, and a synthetic through-ref there fails `--verify`.
+* `.github/workflows/actions-lock.closure.tsv` remains a reviewed trust
+  record for the remote reusable closure. It is advisory while upstream
+  `gh-actions-lock` cannot represent that edge.
 * The inline smtp-notify-action comment now names the v0.5.1 commit.
-* `.github/workflows/workflow-contracts.yml` and
-  `.github/scripts/check-workflow-contracts.sh` add regression checks for
-  moved reusable coordinates, floating reusable pins, SPDX placement,
-  lockfile coverage, and stale inline SHAs.
+* `.github/workflows/workflow-contracts.yml`,
+  `.github/scripts/check-workflow-contracts.sh`, and
+  `.github/scripts/check_workflow_contracts.py` add YAML-aware regression
+  checks for moved reusable coordinates, floating reusable pins, quoted
+  `uses:` values, SPDX placement, lockfile coverage, synthetic reusable-only
+  lock edges, duplicate YAML keys, and every stale inline notification SHA.
 
 === Dependency review
 
@@ -79,13 +92,34 @@ because the author was a bot. GitGuardian and Semgrep reported success;
 CodeQL reported neutral. Those app checks do not substitute for the missing
 required `scan / gitleaks` job.
 
+PR #25 received actionable automated review findings. The initial head
+`3106fca2` was corrected before merge:
+
+* Codex: remove the synthetic `actions/checkout` edge from the reusable-only
+  Secret Scanner lock entry; `gh-actions-lock` v0.4.0 cannot follow remote
+  job-level reusable workflows and `--verify` rejects the unused pin.
+* CodeRabbit: parse YAML rather than grepping unquoted `uses:` values, check
+  every notification-action use, and make the D199 handoff precise about
+  squash evidence, resumable per-PR idempotency, source-head revalidation,
+  authorship limits, and GraphQL signature fields.
+
+CodeRabbit also pushed autofix commit `60e9736` to the PR branch. REST reports
+that commit as `unsigned`; the estate signing policy forbids bot pushes to PR
+branches. This session did not push it. The follow-up signed commit preserves
+the intent of its docstring in the replacement Python checker, and
+`.coderabbit.yaml` disables CodeRabbit's code-changing finishing touches
+(`docstrings`, `unit_tests`, `autofix`, `fix_ci`, `resolve_merge_conflict`).
+That repository setting does not reduce the App's permissions or disable a
+separately enabled Autopilot task. The unsigned commit remains in the PR
+history and must be considered by the merge gate; no force-push or admin
+bypass is used to hide it.
+
 === Merge path
 
-This session may push only `arena/1e24712e-github`, not PR #24's Dependabot
-branch. The repair therefore lands through a signed replacement PR from the
-session branch. PR #24 should be closed as superseded only after the
-replacement merges. No admin bypass, force-push, or required-context removal
-is used.
+This session may push only `arena/1e24712e-github`. PR #24 was merged by the
+owner before the repair landed, so PR #25 is a follow-up repair to `main`,
+not a replacement for an open PR. No admin bypass, force-push, or
+required-context removal is used by this session.
 
 == 2. Issue #13 / D199
 
@@ -161,8 +195,9 @@ visible PR checks are not a substitute for those alert inventories.
 
 === Remaining work
 
-. Merge the replacement PR only after the real required check and the new
-  workflow-contract check pass; then close PR #24 as superseded if permitted.
+. Merge PR #25 only after the real required check and the new
+  workflow-contract check pass on its final head. PR #24 is already merged;
+  no closure action remains for it.
 . Close issue #23 as completed with the confirmed purpose, if permitted.
 . Implement and deploy D199 in `hyperpolymath/cicd-squabbler` under its own
   session; this repository cannot deploy that service.

@@ -5,8 +5,9 @@
 
 === Dependencies
 
-* Update `hyperpolymath/smtp-notify-action` from v0.5.0 to v0.5.1 and reconcile
-  `actions.lock` and the inline pin comment. Carries forward Dependabot PR #24.
+* Reconcile `actions.lock` and the inline pin comment for
+  `hyperpolymath/smtp-notify-action` v0.5.1, merged by Dependabot PR #24.
+  PR #25 is the follow-up CI repair, not a second dependency bump.
 
 === Fixed
 
@@ -15,9 +16,20 @@
   failure and left the required `scan / gitleaks` check absent.
 * Stop inheriting all secrets into the secret scanner; the pinned reusable
   declares no secrets.
-* Add workflow contract checks for moved reusable coordinates, immutable
-  reusable pins, SPDX headers, lockfile coverage, and stale inline action SHAs.
+* Add YAML-aware workflow contract checks for moved reusable coordinates,
+  immutable reusable pins, quoted `uses:` values, SPDX headers, lockfile
+  coverage, synthetic reusable-only lock edges, duplicate YAML keys, and
+  every stale inline notification-action SHA.
+* Keep the reusable-only Secret Scanner lock entry empty so
+  `gh-actions-lock --verify` does not reject an unused synthetic through-ref;
+  retain the reviewed closure TSV as an advisory trust record.
 * Align `.github/settings.yml` merge methods with the live squash-only,
   signed, linear-history rulesets.
 * Remove the stale `mise.toml` runtime/build template from this
   community-health repository.
+* Tighten the D199 handoff: fail-closed squash classification, resumable
+  per-downstream-PR idempotency, source-head revalidation, explicit
+  `createCommitOnBranch` authorship limits, and GraphQL/REST signature checks.
+* Configure CodeRabbit as advisory-only for code-changing finishing touches
+  after an unsigned autofix commit reached the PR branch; the estate signing
+  policy requires GitHub-verified commits on PR branches.

@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MPL-2.0
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit is advisory in this repository. The estate signing policy forbids
+# bot pushes to PR branches; every landed commit must be GitHub-verified.
+# Disable CodeRabbit's code-changing finishing touches. This does not reduce
+# the GitHub App's permissions or disable a separately enabled Autopilot task.
+reviews:
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    autofix:
+      enabled: false
+    fix_ci:
+      enabled: false
+    resolve_merge_conflict:
+      enabled: false

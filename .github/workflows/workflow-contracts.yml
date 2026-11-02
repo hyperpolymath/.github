@@ -28,6 +28,12 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install contract checker dependency
+        run: |
+          python3 -m venv "$RUNNER_TEMP/contract-venv"
+          "$RUNNER_TEMP/contract-venv/bin/pip" install --disable-pip-version-check --require-hashes --only-binary=:all: -r .github/scripts/requirements.txt
+          echo "$RUNNER_TEMP/contract-venv/bin" >> "$GITHUB_PATH"
+
       - name: Regression tests for the contract checker
         run: bash .github/scripts/tests/workflow-contracts-test.sh
 

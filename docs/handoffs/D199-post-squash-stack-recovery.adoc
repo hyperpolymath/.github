@@ -43,17 +43,61 @@ implemented as *replacement-branch recovery*, not in-place force-push.
 
 == Event and detection
 
-Subscribe to `pull_request` `closed`. Act only when:
+Subscribe to `pull_request` `closed`. Act only when all of the following are
+established from fresh API reads, not from the webhook payload alone:
 
 . `merged == true`;
 . the base is the repository default branch or a known stack base;
-. the merge is a squash merge, evidenced by the merge commit and PR metadata,
-  not by title alone;
+. the merge is positively classified as a squash merge;
 . the merged head branch has open downstream PRs targeting it.
 
-Record an idempotency key: repository id + merged PR number + merge commit SHA.
-Persist it before mutation so webhook redelivery cannot create duplicate
-replacement PRs.
+Squash classification must be fail-closed. GitHub does not expose a stable
+post-merge `mergeMethod` field on `PullRequest`, and `merge_commit_sha` alone
+does not identify the method. The implementation must record the exact
+checks it uses. The minimum evidence set is:
+
+* repository merge settings at event time permit squash and forbid merge
+  commits and rebase merges (`allow_squash_merge == true`,
+  `allow_merge_commit == false`, `allow_rebase_merge == false`);
+* the PR is merged and has a non-null `merge_commit_sha`;
+* the merge commit is reachable from the base branch and has exactly one
+  parent, ruling out an ordinary two-parent merge commit;
+* the PR timeline contains the corresponding `merged` event and no
+  merge-queue entry;
+* the commit message/tree metadata is consistent with GitHub's squash commit
+  for that PR, not merely a title containing `(#N)`.
+
+If any evidence is missing, unreadable, or conflicting, record
+`ambiguous_merge_method` and take no mutating action. Merge commits, rebase
+merges, merge-queue merges, and ambiguous events are negative cases, not
+silent skips.
+
+== Idempotency and resume state
+
+Record a stack event key: repository id + merged PR number + merge commit SHA.
+Also record a separate recovery row for each downstream PR:
+
+`repository id + downstream PR number + stack event key`.
+
+Each row must persist a state machine, lease owner, lease expiry, attempt
+count, last error, captured downstream head/base SHAs, replay tree hash,
+replacement branch name, replacement PR number/URL, and original-PR closure
+status. Suggested states:
+
+* `observed`
+* `replayed`
+* `branch_created`
+* `pr_created`
+* `original_closed`
+* `completed`
+* `escalated`
+* `failed_retryable`
+
+Persist the row before mutation. Webhook redelivery must resume non-terminal
+rows rather than suppress the only retry. A stack-level key alone is not
+sufficient because siblings can partially succeed. If a replacement PR
+already exists for the same row and tree hash, report it instead of creating
+another.
 
 == Recovery algorithm
 
@@ -69,21 +113,36 @@ For each downstream PR in topological order (base PR before children):
   SHAs, and the manual command a human can run. Label it `stack:conflict` or
   the repo's equivalent. Continue independent sibling stacks only if their
   bases are unaffected.
-. If clean, create a new branch in the same repository, for example
-  `stack-recovery/pr-<number>-<merge-sha-prefix>`, from the new base.
+. Immediately before creating the replacement branch, re-fetch the original
+  downstream PR and its base. If the PR is no longer open, or its head/base
+  SHA differs from the captured values, discard the stale replay and
+  recompute or escalate. `expectedHeadOid` protects the new recovery branch;
+  it does not protect the original downstream head.
+. If clean and still current, create a new branch in the same repository, for
+  example `stack-recovery/pr-<number>-<merge-sha-prefix>`, from the new base.
 . Recreate the downstream commits on that branch through GitHub's signed
-  commit API (`createCommitOnBranch`), preserving original authorship metadata
-  and adding a co-author/trailer for the recovery actor where appropriate.
-  Verify each returned commit has `verification.verified == true` before
-  proceeding. If the API cannot preserve the required file modes/binary
-  changes, escalate rather than pushing unsigned local commits.
+  commit API (`createCommitOnBranch`). This API authors commits as the
+  credential owner; it cannot preserve the original primary author. Preserve
+  original author/committer metadata in the recovery report and add
+  `Co-authored-by` trailers where appropriate, but do not claim primary
+  authorship is preserved. If exact primary authorship is a hard requirement,
+  escalate or use a separately approved verified signing path with explicit
+  author metadata; never push unsigned local commits.
+. Verify each returned commit before proceeding. In GraphQL, require
+  `signature.isValid == true` and `signature.wasSignedByGitHub == true`;
+  a missing signature is a failure. As a cross-check, REST
+  `commit.verification.verified` must also be true. If the API cannot preserve
+  required file modes/binary changes, escalate rather than pushing unsigned
+  local commits.
 . Open a replacement PR against the correct new base. Link the original PR,
   merge commit, recovery run, and tree-equivalence evidence. Copy relevant
   labels/review requests only where the API permits and the semantics are
   safe. Do not copy approvals as if they apply to the new head.
-. Close the original downstream PR as superseded only after the replacement
-  PR exists and the new head is visible. If closing is not permitted, leave a
-  comment and report the partial state.
+. Immediately before closing the original downstream PR, re-fetch it again.
+  Close it as superseded only if it is still open, its head/base still match
+  the recovered values, and the replacement PR exists with the new head
+  visible. If closing is not permitted or the PR changed, leave a comment and
+  report the partial state.
 . Re-target or recover nested children against the replacement branch/PR in
   the same topological pass. A child must never be replayed onto a base that
   has not itself been recovered or merged.
@@ -103,29 +162,37 @@ For each downstream PR in topological order (base PR before children):
 == Concurrency and rate limits
 
 * Queue work per repository and per stack root. Use a lease or equivalent
-  compare-and-swap on the idempotency key.
+  compare-and-swap on the per-downstream-PR recovery row.
 * Use `expectedHeadOid` on every commit API call. On mismatch, re-fetch and
   recompute; never overwrite a moving branch.
 * Debounce by downstream head SHA. One installation token can cover hundreds
   of repositories; pace requests and treat secondary-limit 403 as retryable
   infrastructure failure, not a verdict.
 * Make redelivery safe: if a replacement PR already exists for the same
-  idempotency key and tree hash, report it instead of creating another.
+  recovery row and tree hash, report it instead of creating another.
+* Crash recovery must resume `replayed`, `branch_created`, and `pr_created`
+  rows. A row is terminal only when `completed` or explicitly `escalated`.
 
 == Required tests and evidence
 
 Unit/fixture tests:
 
 * squash merge with one downstream PR, clean replay;
+* merge commit, rebase merge, and merge-queue merge: no replacement PR;
+* ambiguous or conflicting merge evidence: no mutation, escalation recorded;
 * nested stack A -> B -> C, topological recovery;
 * sibling stacks, independent failure isolation;
 * conflict in a middle PR: no push, no silent skip, precise report;
 * duplicate webhook delivery: one replacement PR;
-* concurrent head update: `expectedHeadOid` refusal and recompute;
+* crash after persistence but before replacement PR creation: resume succeeds;
+* concurrent downstream head update: stale replay discarded and recomputed;
+* concurrent original-PR closure/merge: no stale closure;
+* `expectedHeadOid` refusal on the recovery branch: recompute;
 * fork PR: no unauthorized fork push;
 * deleted fork/base branch: explicit escalation;
 * binary file, executable bit, rename, and delete preservation;
-* unsigned API response or missing verification: stop before closing old PR;
+* unsigned API response, missing GraphQL signature, or failed REST verification:
+  stop before closing old PR;
 * rate-limit/secondary-limit response: retry/escalate, never green.
 
 Integration tests:
