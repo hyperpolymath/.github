@@ -1,0 +1,23 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Changelog
+
+== Unreleased
+
+=== Dependencies
+
+* Update `hyperpolymath/smtp-notify-action` from v0.5.0 to v0.5.1 and reconcile
+  `actions.lock` and the inline pin comment. Carries forward Dependabot PR #24.
+
+=== Fixed
+
+* Point the Secret Scanner caller at `metadatastician/standards`; the
+  pre-transfer `hyperpolymath/standards` coordinate caused a zero-job startup
+  failure and left the required `scan / gitleaks` check absent.
+* Stop inheriting all secrets into the secret scanner; the pinned reusable
+  declares no secrets.
+* Add workflow contract checks for moved reusable coordinates, immutable
+  reusable pins, SPDX headers, lockfile coverage, and stale inline action SHAs.
+* Align `.github/settings.yml` merge methods with the live squash-only,
+  signed, linear-history rulesets.
+* Remove the stale `mise.toml` runtime/build template from this
+  community-health repository.

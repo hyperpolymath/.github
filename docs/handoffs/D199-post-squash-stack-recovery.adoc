@@ -1,0 +1,157 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= D199 handoff: automated post-squash stack recovery
+:toc:
+:toclevels: 3
+
+Status: handoff only. Not implemented or deployed by the `.github` session.
+Target repository: https://github.com/hyperpolymath/cicd-squabbler[`hyperpolymath/cicd-squabbler`].
+Target service: `squabble-app` webhook leg, with a new stack-recovery move in
+the squabble core/forge layers. Related owner rollout:
+https://github.com/hyperpolymath/cicd-squabbler/issues/122[cicd-squabbler#122]
+(D266/D267). Policy source:
+https://github.com/hyperpolymath/.github/issues/13[.github#13] (D199) and
+`metadatastician/standards/docs/SIGNING-POLICY.adoc`.
+
+== Why this repository/service
+
+D199 is estate-wide PR branch recovery, not a community-health file. The
+owner has already ruled that squabble rolls out as a GitHub App installed on
+all repositories of both accounts, hosted on owned compute, with no per-repo
+workflow churn. `squabble-app` on `main` currently exposes only loopback
+`/health`, `/api/v1/diagnose`, and `/api/v1/fight`; it has no webhook route or
+App-auth leg. Implementing D199 here would put estate mutation logic in the
+wrong source and would not satisfy the rollout decision.
+
+Where `gitbot-fleet/robot-repo-automaton` is present and working, respect the
+estate precedence directive and avoid duplicate writers. The squabbler App
+must either dispatch to the primary or hold a per-repo lease before mutating
+branches. It must remain standalone when the fleet is absent.
+
+== Non-negotiable policy constraints
+
+* No unsigned bot pushes.
+* No force-pushes, including `git push --force-with-lease` to a PR branch.
+* No protection bypass, admin merge, required-context removal, or check rename.
+* No silent conflict skip (`git rebase --skip` is not an autonomous remedy).
+* Every new commit must be GitHub-verified, preferably web-flow GPG through
+  `createCommitOnBranch`.
+* A recovered stack is not "green" until the downstream PR's own required
+  checks run and pass on the new head.
+
+Because a normal rebase updates a branch by non-fast-forward, D199 must be
+implemented as *replacement-branch recovery*, not in-place force-push.
+
+== Event and detection
+
+Subscribe to `pull_request` `closed`. Act only when:
+
+. `merged == true`;
+. the base is the repository default branch or a known stack base;
+. the merge is a squash merge, evidenced by the merge commit and PR metadata,
+  not by title alone;
+. the merged head branch has open downstream PRs targeting it.
+
+Record an idempotency key: repository id + merged PR number + merge commit SHA.
+Persist it before mutation so webhook redelivery cannot create duplicate
+replacement PRs.
+
+== Recovery algorithm
+
+For each downstream PR in topological order (base PR before children):
+
+. Fetch the downstream head, the merged base, and the old stack base into an
+  isolated temporary repository. Never operate on a user's working tree.
+. Compute the post-squash replay: `git rebase --onto <new-base> <old-base>
+  <downstream-head>` in the temporary repository, or an equivalent three-way
+  cherry-pick sequence. Capture the exact commit range and tree hashes.
+. If any conflict occurs, stop that branch. Do not push a partial result.
+  Post a structured report naming the PR, conflicting paths, old/new base
+  SHAs, and the manual command a human can run. Label it `stack:conflict` or
+  the repo's equivalent. Continue independent sibling stacks only if their
+  bases are unaffected.
+. If clean, create a new branch in the same repository, for example
+  `stack-recovery/pr-<number>-<merge-sha-prefix>`, from the new base.
+. Recreate the downstream commits on that branch through GitHub's signed
+  commit API (`createCommitOnBranch`), preserving original authorship metadata
+  and adding a co-author/trailer for the recovery actor where appropriate.
+  Verify each returned commit has `verification.verified == true` before
+  proceeding. If the API cannot preserve the required file modes/binary
+  changes, escalate rather than pushing unsigned local commits.
+. Open a replacement PR against the correct new base. Link the original PR,
+  merge commit, recovery run, and tree-equivalence evidence. Copy relevant
+  labels/review requests only where the API permits and the semantics are
+  safe. Do not copy approvals as if they apply to the new head.
+. Close the original downstream PR as superseded only after the replacement
+  PR exists and the new head is visible. If closing is not permitted, leave a
+  comment and report the partial state.
+. Re-target or recover nested children against the replacement branch/PR in
+  the same topological pass. A child must never be replayed onto a base that
+  has not itself been recovered or merged.
+
+== Forks
+
+* Never push to a fork without explicit permission and a verified signing
+  path. Default: create an upstream replacement branch from the fork head if
+  the App has read access and the repository permits it, then open an
+  upstream replacement PR crediting the fork author.
+* If the fork head cannot be read or upstream replacement is not permitted,
+  do not silently skip. Post a recovery report to the original PR with the
+  exact conflict-free patch/branch instructions and mark it needing human
+  action.
+* Private forks and deleted source branches are explicit escalation cases.
+
+== Concurrency and rate limits
+
+* Queue work per repository and per stack root. Use a lease or equivalent
+  compare-and-swap on the idempotency key.
+* Use `expectedHeadOid` on every commit API call. On mismatch, re-fetch and
+  recompute; never overwrite a moving branch.
+* Debounce by downstream head SHA. One installation token can cover hundreds
+  of repositories; pace requests and treat secondary-limit 403 as retryable
+  infrastructure failure, not a verdict.
+* Make redelivery safe: if a replacement PR already exists for the same
+  idempotency key and tree hash, report it instead of creating another.
+
+== Required tests and evidence
+
+Unit/fixture tests:
+
+* squash merge with one downstream PR, clean replay;
+* nested stack A -> B -> C, topological recovery;
+* sibling stacks, independent failure isolation;
+* conflict in a middle PR: no push, no silent skip, precise report;
+* duplicate webhook delivery: one replacement PR;
+* concurrent head update: `expectedHeadOid` refusal and recompute;
+* fork PR: no unauthorized fork push;
+* deleted fork/base branch: explicit escalation;
+* binary file, executable bit, rename, and delete preservation;
+* unsigned API response or missing verification: stop before closing old PR;
+* rate-limit/secondary-limit response: retry/escalate, never green.
+
+Integration tests:
+
+* Mock GitHub GraphQL/REST with recorded fixtures for `createCommitOnBranch`,
+  PR creation, PR close, labels, and check-rollup reads.
+* A disposable canary repository with a real squash merge and a two-level
+  stack. Evidence must include old/new SHAs, replacement PR URLs, verified
+  commit badges/API verification, required-check runs on the new heads, and
+  the final merge state.
+* A paired conflict canary proving the service refuses to push and reports
+  the conflicting paths.
+
+Deployment evidence:
+
+* App registration/installation ids and permission set, without secrets.
+* Webhook signature verification: bad signature -> 401.
+* Ingress/TLS and loopback origin configuration on owned compute.
+* Health/readiness and queue/lease observability.
+* A redelivered production webhook that is idempotent.
+* Explicit statement that the squabble advisory check is not required.
+
+== Acceptance
+
+D199 is complete only when a squash merge automatically produces verified,
+conflict-free replacement downstream PRs (or explicit conflict/fork
+escalations), nested stacks recover in order, duplicate/concurrent deliveries
+are safe, and the downstream required checks pass on the recovered heads.
+Closing the tracking issue or seeing the App online is not sufficient.

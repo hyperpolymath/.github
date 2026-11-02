@@ -1,0 +1,5 @@
+# Reviewed closure of remote reusable workflows (standards#968, #1290).
+# Produced by scripts/check-reusable-closure.sh --write-baseline; a change
+# here is a change to what this repository trusts, so review the diff.
+# workflow<TAB>reusable-call<TAB>ref reached at startup
+.github/workflows/secret-scanner.yml	metadatastician/standards@8d1a2aab4211493cf42f147f2080f024605797dc	actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
