@@ -118,9 +118,11 @@ For each downstream PR in topological order (base PR before children):
   bases are unaffected.
 . Immediately before creating the replacement branch, re-fetch the original
   downstream PR and its base. If the PR is no longer open, or its head/base
-  SHA differs from the captured values, discard the stale replay and
-  recompute or escalate. `expectedHeadOid` protects the new recovery branch;
-  it does not protect the original downstream head.
+  repository, ref, or SHA differs from the captured values, discard the stale
+  replay and recompute or escalate. Compare ref identities as well as SHAs:
+  a retarget to another base branch at the same SHA is still a different PR
+  relationship. `expectedHeadOid` protects the new recovery branch; it does
+  not protect the original downstream head.
 . If clean and still current, create a new branch in the same repository, for
   example `stack-recovery/pr-<number>-<merge-sha-prefix>`, from the new base.
 . Recreate the downstream commits on that branch through GitHub's signed
@@ -137,14 +139,21 @@ For each downstream PR in topological order (base PR before children):
   `commit.verification.verified` must also be true. If the API cannot preserve
   required file modes/binary changes, escalate rather than pushing unsigned
   local commits.
+. Compare the final replacement-branch tree with the captured replay tree
+  before opening the replacement PR. Compare every path's type, mode, and
+  object ID. `createCommitOnBranch` accepts file contents and paths but not
+  file-mode metadata, so a mode/type/object mismatch is a hard stop. If any
+  entry differs, do not open the replacement PR or close the original PR;
+  report the mismatch and escalate.
 . Open a replacement PR against the correct new base. Link the original PR,
   merge commit, recovery run, and tree-equivalence evidence. Copy relevant
   labels/review requests only where the API permits and the semantics are
   safe. Do not copy approvals as if they apply to the new head.
 . Immediately before closing the original downstream PR, re-fetch it again.
-  Close it as superseded only if it is still open, its head/base still match
-  the recovered values, and the replacement PR exists with the new head
-  visible. If closing is not permitted or the PR changed, leave a comment and
+  Close it as superseded only if it is still open, its head/base repository,
+  ref, and SHA still match the recovered values, the tree-equivalence check
+  passed, and the replacement PR exists with the new head visible. If closing
+  is not permitted, the PR changed, or the trees differ, leave a comment and
   report the partial state.
 . Re-target or recover nested children against the replacement branch/PR in
   the same topological pass. A child must never be replayed onto a base that

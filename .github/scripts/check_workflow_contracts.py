@@ -47,6 +47,8 @@ UniqueKeyLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, 
 REMOTE_REUSABLE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/\.github/workflows/[^@]+@(.+)$")
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 SMTP_REF = re.compile(r"^hyperpolymath/smtp-notify-action@(v[0-9]+\.[0-9]+\.[0-9]+)$")
+LOCAL_SCANNER = "./.github/workflows/secret-scanner-reusable.yml"
+VENDORED_SCANNER_PIN = "8d1a2aab4211493cf42f147f2080f024605797dc"
 INLINE_SHA = re.compile(r"sha1-([0-9a-f]{40})")
 
 failures: list[str] = []
@@ -148,6 +150,11 @@ def main() -> int:
             if value.startswith("hyperpolymath/standards/"):
                 fail(f"{rel}:{line_no + 1}: pre-transfer hyperpolymath/standards coordinate: {value}")
 
+            if value.startswith("./.github/workflows/"):
+                local_target = root / value[2:]
+                if not local_target.is_file():
+                    fail(f"{rel}:{line_no + 1}: local reusable workflow does not exist: {value}")
+
             if "/.github/workflows/" in value and not value.startswith(("./", "$/")):
                 has_remote_reusable = True
                 match = REMOTE_REUSABLE.match(value)
@@ -169,15 +176,33 @@ def main() -> int:
             elif pin not in dependencies:
                 fail(f"{rel}: actions.lock pin has no dependency record: {pin}")
 
+        if wf.name == "secret-scanner.yml":
+            scanner_uses = [v for v, _line, path in uses if isinstance(v, str) and "jobs" in path and "steps" not in path]
+            if scanner_uses != [LOCAL_SCANNER]:
+                fail(f"{rel}: must call the local vendored scanner {LOCAL_SCANNER} (Actions allowlist blocks the remote standards reusable)")
+            vendored = wf_dir / "secret-scanner-reusable.yml"
+            if not vendored.is_file():
+                fail(f"{rel}: vendored scanner missing: {vendored}")
+            else:
+                vtext = vendored.read_text(encoding="utf-8")
+                if f"at {VENDORED_SCANNER_PIN}." not in vtext:
+                    fail(f"{rel}: vendored scanner missing provenance pin {VENDORED_SCANNER_PIN}")
+                if "ref: ${{ job.workflow_sha }}" in vtext:
+                    fail(f"{rel}: vendored scanner must pin standards baseline explicitly, not job.workflow_sha")
+
         if wf.name == "push-email-notify.yml":
             smtp_count = 0
             for value, line_no, _path in uses:
                 if not isinstance(value, str):
                     continue
-                match = SMTP_REF.match(value)
-                if not match:
+                if value.startswith("hyperpolymath/smtp-notify-action@"):
+                    smtp_count += 1
+                    match = SMTP_REF.match(value)
+                    if not match:
+                        fail(f"{rel}:{line_no + 1}: smtp-notify-action must use an exact semver tag: {value}")
+                        continue
+                else:
                     continue
-                smtp_count += 1
                 tag = match.group(1)
                 raw_line = lines[line_no] if line_no < len(lines) else ""
                 inline = INLINE_SHA.search(raw_line)

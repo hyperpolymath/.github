@@ -2,6 +2,9 @@
 = Changelog
 
 == Unreleased
+* Vendor the estate secret scanner locally because the repository Actions
+  allowlist blocks the canonical `metadatastician/standards` reusable; keep
+  the required `scan / gitleaks` context and pin the vendored baseline fetch.
 
 === Dependencies
 

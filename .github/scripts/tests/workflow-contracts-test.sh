@@ -17,7 +17,14 @@ workflows:
     '.github/workflows/push-email-notify.yml':
         - 'hyperpolymath/smtp-notify-action@v0.5.1'
     '.github/workflows/secret-scanner.yml': []
+    '.github/workflows/secret-scanner-reusable.yml':
+        - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
 dependencies:
+    'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1':
+        ref: 'v7.0.1'
+        commit: 'sha1-3d3c42e5aac5ba805825da76410c181273ba90b1'
+        owner_id: 44036562
+        repo_id: 197814629
     'hyperpolymath/smtp-notify-action@v0.5.1':
         ref: 'v0.5.1'
         commit: 'sha1-e384daf6167a7a7567642d6a62060106244d2413'
@@ -35,7 +42,19 @@ YAML
 name: Secret Scanner
 jobs:
   scan:
-    uses: metadatastician/standards/.github/workflows/secret-scanner-reusable.yml@8d1a2aab4211493cf42f147f2080f024605797dc
+    uses: ./.github/workflows/secret-scanner-reusable.yml
+YAML
+  cat > "$root/.github/workflows/secret-scanner-reusable.yml" <<'YAML'
+# SPDX-License-Identifier: MPL-2.0
+# Vendored from metadatastician/standards/.github/workflows/secret-scanner-reusable.yml
+# at 8d1a2aab4211493cf42f147f2080f024605797dc.
+name: Secret Scanner Reusable
+on:
+  workflow_call:
+jobs:
+  gitleaks:
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 YAML
 }
 
@@ -62,20 +81,28 @@ sed -i 's/sha1-e384daf6167a7a7567642d6a62060106244d2413/sha1-ede1191ef6ff3ac02c4
 expect stale_inline_sha 1 "$WORK/stale_sha"
 
 fixture moved_owner
-sed -i 's#metadatastician/standards/#hyperpolymath/standards/#' "$WORK/moved_owner/.github/workflows/secret-scanner.yml"
+sed -i 's#uses: ./.github/workflows/secret-scanner-reusable.yml#uses: hyperpolymath/standards/.github/workflows/secret-scanner-reusable.yml@8d1a2aab4211493cf42f147f2080f024605797dc#' "$WORK/moved_owner/.github/workflows/secret-scanner.yml"
 expect moved_reusable_owner 1 "$WORK/moved_owner"
 
 fixture floating_pin
-sed -i 's/@8d1a2aab4211493cf42f147f2080f024605797dc/@main/' "$WORK/floating_pin/.github/workflows/secret-scanner.yml"
+sed -i 's#uses: ./.github/workflows/secret-scanner-reusable.yml#uses: metadatastician/standards/.github/workflows/secret-scanner-reusable.yml@main#' "$WORK/floating_pin/.github/workflows/secret-scanner.yml"
 expect floating_reusable_pin 1 "$WORK/floating_pin"
 
 fixture quoted_moved_owner
-sed -i 's#uses: metadatastician/standards/.github/workflows/secret-scanner-reusable.yml@8d1a2aab4211493cf42f147f2080f024605797dc#uses: "hyperpolymath/standards/.github/workflows/secret-scanner-reusable.yml@8d1a2aab4211493cf42f147f2080f024605797dc"#' "$WORK/quoted_moved_owner/.github/workflows/secret-scanner.yml"
+sed -i 's#uses: ./.github/workflows/secret-scanner-reusable.yml#uses: "hyperpolymath/standards/.github/workflows/secret-scanner-reusable.yml@8d1a2aab4211493cf42f147f2080f024605797dc"#' "$WORK/quoted_moved_owner/.github/workflows/secret-scanner.yml"
 expect quoted_moved_reusable_owner 1 "$WORK/quoted_moved_owner"
 
 fixture quoted_floating_pin
-sed -i "s#uses: metadatastician/standards/.github/workflows/secret-scanner-reusable.yml@8d1a2aab4211493cf42f147f2080f024605797dc#uses: 'metadatastician/standards/.github/workflows/secret-scanner-reusable.yml@main'#" "$WORK/quoted_floating_pin/.github/workflows/secret-scanner.yml"
+sed -i "s#uses: ./.github/workflows/secret-scanner-reusable.yml#uses: 'metadatastician/standards/.github/workflows/secret-scanner-reusable.yml@main'#" "$WORK/quoted_floating_pin/.github/workflows/secret-scanner.yml"
 expect quoted_floating_reusable_pin 1 "$WORK/quoted_floating_pin"
+
+fixture remote_scanner_blocked
+sed -i 's#uses: ./.github/workflows/secret-scanner-reusable.yml#uses: metadatastician/standards/.github/workflows/secret-scanner-reusable.yml@8d1a2aab4211493cf42f147f2080f024605797dc#' "$WORK/remote_scanner_blocked/.github/workflows/secret-scanner.yml"
+expect remote_scanner_allowlist_contract 1 "$WORK/remote_scanner_blocked"
+
+fixture missing_vendored_scanner
+rm "$WORK/missing_vendored_scanner/.github/workflows/secret-scanner-reusable.yml"
+expect missing_vendored_scanner 1 "$WORK/missing_vendored_scanner"
 
 fixture missing_spdx
 sed -i '1s/.*/# managed/' "$WORK/missing_spdx/.github/workflows/secret-scanner.yml"
@@ -86,6 +113,7 @@ sed -i "/secret-scanner.yml':/d" "$WORK/missing_lock_entry/.github/workflows/act
 expect missing_lock_workflow_entry 1 "$WORK/missing_lock_entry"
 
 fixture synthetic_reusable_edge
+sed -i 's#uses: ./.github/workflows/secret-scanner-reusable.yml#uses: hyperpolymath/standards/.github/workflows/secret-scanner-reusable.yml@8d1a2aab4211493cf42f147f2080f024605797dc#' "$WORK/synthetic_reusable_edge/.github/workflows/secret-scanner.yml"
 sed -i "s#'.github/workflows/secret-scanner.yml': \[\]#'.github/workflows/secret-scanner.yml':\n        - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'#" "$WORK/synthetic_reusable_edge/.github/workflows/actions.lock"
 expect synthetic_reusable_only_lock_edge 1 "$WORK/synthetic_reusable_edge"
 
@@ -104,6 +132,14 @@ cat >> "$WORK/second_smtp_missing_sha/.github/workflows/push-email-notify.yml" <
       - uses: hyperpolymath/smtp-notify-action@v0.5.1
 YAML
 expect second_smtp_use_missing_inline_sha 1 "$WORK/second_smtp_missing_sha"
+
+fixture second_smtp_floating
+cat >> "$WORK/second_smtp_floating/.github/workflows/push-email-notify.yml" <<'YAML'
+  second:
+    steps:
+      - uses: hyperpolymath/smtp-notify-action@main
+YAML
+expect second_smtp_use_floating_ref 1 "$WORK/second_smtp_floating"
 
 fixture duplicate_yaml_key
 printf '\njobs: {}\n' >> "$WORK/duplicate_yaml_key/.github/workflows/secret-scanner.yml"
