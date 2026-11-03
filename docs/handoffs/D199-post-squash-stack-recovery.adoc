@@ -59,6 +59,9 @@ checks it uses. The minimum evidence set is:
 * repository merge settings at event time permit squash and forbid merge
   commits and rebase merges (`allow_squash_merge == true`,
   `allow_merge_commit == false`, `allow_rebase_merge == false`);
+  These settings must come from persisted event-time webhook or audit
+  evidence. If that evidence is unavailable, classify the event as
+  `ambiguous_merge_method` and take no mutating action.
 * the PR is merged and has a non-null `merge_commit_sha`;
 * the merge commit is reachable from the base branch and has exactly one
   parent, ruling out an ordinary two-parent merge commit;
