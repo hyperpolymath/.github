@@ -1,0 +1,65 @@
+# SPDX-License-Identifier: MPL-2.0
+# This workflow is managed by gh actions-lock.
+name: Workflow contracts
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    name: Workflow and lock contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install contract checker dependency
+        run: |
+          python3 -m venv "$RUNNER_TEMP/contract-venv"
+          "$RUNNER_TEMP/contract-venv/bin/pip" install --disable-pip-version-check --require-hashes --only-binary=:all: -r .github/scripts/requirements.txt
+          echo "$RUNNER_TEMP/contract-venv/bin" >> "$GITHUB_PATH"
+
+      - name: Regression tests for the contract checker
+        run: bash .github/scripts/tests/workflow-contracts-test.sh
+
+      - name: Repository workflow contracts
+        run: bash .github/scripts/check-workflow-contracts.sh
+
+      - name: Install gh-actions-lock (pinned release, digest verified)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo=github/gh-actions-lock
+          tag=v0.4.0
+          asset=linux-amd64
+          gh release download "$tag" --repo "$repo" --pattern "$asset" --output "$RUNNER_TEMP/gh-actions-lock"
+          digest=$(gh api "repos/$repo/releases/tags/$tag" --jq ".assets[] | select(.name == \"$asset\") | .digest")
+          case "$digest" in
+            sha256:*) ;;
+            *) echo "missing sha256 digest for $repo $tag $asset" >&2; exit 1 ;;
+          esac
+          echo "${digest#sha256:}  $RUNNER_TEMP/gh-actions-lock" | sha256sum -c -
+          install -m 0755 "$RUNNER_TEMP/gh-actions-lock" "$RUNNER_TEMP/gh-actions-lock-bin"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+          ln -sf "$RUNNER_TEMP/gh-actions-lock-bin" "$RUNNER_TEMP/gh-actions-lock"
+
+      - name: Verify actions.lock against GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh-actions-lock --verify

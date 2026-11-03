@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Changelog
+
+== Unreleased
+* Vendor the estate secret scanner locally because the repository Actions
+  allowlist blocks the canonical `metadatastician/standards` reusable; keep
+  the required `scan / gitleaks` context and pin the vendored baseline fetch.
+
+=== Dependencies
+
+* Reconcile `actions.lock` and the inline pin comment for
+  `hyperpolymath/smtp-notify-action` v0.5.1, merged by Dependabot PR #24.
+  PR #25 is the follow-up CI repair, not a second dependency bump.
+
+=== Fixed
+
+* Point the Secret Scanner caller at `metadatastician/standards`; the
+  pre-transfer `hyperpolymath/standards` coordinate caused a zero-job startup
+  failure and left the required `scan / gitleaks` check absent.
+* Stop inheriting all secrets into the secret scanner; the pinned reusable
+  declares no secrets.
+* Add YAML-aware workflow contract checks for moved reusable coordinates,
+  immutable reusable pins, quoted `uses:` values, SPDX headers, lockfile
+  coverage, synthetic reusable-only lock edges, duplicate YAML keys, and
+  every stale inline notification-action SHA.
+* Keep the reusable-only Secret Scanner lock entry empty so
+  `gh-actions-lock --verify` does not reject an unused synthetic through-ref;
+  retain the reviewed closure TSV as an advisory trust record.
+* Align `.github/settings.yml` merge methods with the live squash-only,
+  signed, linear-history rulesets.
+* Remove the stale `mise.toml` runtime/build template from this
+  community-health repository.
+* Tighten the D199 handoff: fail-closed squash classification, resumable
+  per-downstream-PR idempotency, source-head revalidation, explicit
+  `createCommitOnBranch` authorship limits, and GraphQL/REST signature checks.
+* Configure CodeRabbit as advisory-only for code-changing finishing touches
+  after an unsigned autofix commit reached the PR branch; the estate signing
+  policy requires GitHub-verified commits on PR branches.

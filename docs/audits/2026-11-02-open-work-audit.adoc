@@ -1,0 +1,215 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Open-work audit: hyperpolymath/.github
+:toc:
+:toclevels: 3
+
+Date: 2026-11-02 (Europe/London). Session branch: `arena/1e24712e-github`.
+This record distinguishes observed evidence, source changes, and work that
+remains outside this repository or outside the integration's permissions.
+
+== 1. PR #24 and Secret Scanner run 41457289788
+
+=== Observed cause
+
+PR #24 proposed `hyperpolymath/smtp-notify-action` v0.5.0 -> v0.5.1. Its
+Secret Scanner run https://github.com/hyperpolymath/.github/actions/runs/41457289788[41457289788]
+completed with `failure`, created zero jobs, and had no log archive. The run
+page annotation is the decisive evidence:
+
+[source,text]
+----
+Invalid workflow file: .github/workflows/secret-scanner.yml#L22
+error parsing called workflow
+".github/workflows/secret-scanner.yml"
+-> "hyperpolymath/standards/.github/workflows/secret-scanner-reusable.yml@bd0df9ead7faf0cdfe0e13e7966d91e28d0101d4"
+: workflow was not found.
+----
+
+The REST API still redirects `hyperpolymath/standards` to
+`metadatastician/standards`, and the pinned file exists at the canonical
+repository. GitHub Actions does not follow that redirect for job-level
+`uses:`. The required `scan / gitleaks` context was therefore absent, not
+merely failing. This matches the canonical handoff in
+`metadatastician/standards/docs/GOVERNANCE-SOURCE-HANDOFF.adoc` and
+`docs/decisions/2026-10-27-recovered-session-decisions.adoc`.
+
+The lockfile was not the cause of this particular zero-job run. It was,
+however, stale in two ways: `main` still locked smtp-notify-action v0.3.0 while
+the workflow used v0.5.0, and PR #24's inline comment still named the v0.2.0
+commit `ede1191ef6ff3ac02c4f4d9efdf837ee517e11d7`.
+
+PR #24 was merged by the repository owner at 2026-11-02 19:18 UTC as
+`f0f7896e4fd8a05e533a59dc4ee88aaa136fc523`. The merge did not repair the
+caller: post-merge Secret Scanner run
+https://github.com/hyperpolymath/.github/actions/runs/41508702476[41508702476]
+also completed with `failure` and zero jobs. `main` therefore remained broken
+after the dependency bump landed.
+
+=== Source repair
+
+PR #25 is the follow-up repair. It keeps the v0.5.1 dependency bump already
+merged by PR #24 and repairs the source:
+
+* `.github/workflows/secret-scanner.yml` now calls
+  `metadatastician/standards/.github/workflows/secret-scanner-reusable.yml`
+  at `8d1a2aab4211493cf42f147f2080f024605797dc`.
+* The caller grants only `contents: read` and no longer uses
+  `secrets: inherit`; the pinned reusable declares no secrets.
+* `.github/workflows/actions.lock` records smtp-notify-action v0.5.1 at
+  `e384daf6167a7a7567642d6a62060106244d2413` and the checkout pin used by
+  `workflow-contracts.yml`. The reusable-only Secret Scanner caller has an
+  empty lock entry: `gh-actions-lock` v0.4.0 does not follow remote job-level
+  reusable workflows, and a synthetic through-ref there fails `--verify`.
+* `.github/workflows/actions-lock.closure.tsv` remains a reviewed trust
+  record for the remote reusable closure. It is advisory while upstream
+  `gh-actions-lock` cannot represent that edge.
+* The inline smtp-notify-action comment now names the v0.5.1 commit.
+* `.github/workflows/workflow-contracts.yml`,
+  `.github/scripts/check-workflow-contracts.sh`, and
+  `.github/scripts/check_workflow_contracts.py` add YAML-aware regression
+  checks for moved reusable coordinates, floating reusable pins, quoted
+  `uses:` values, SPDX placement, lockfile coverage, synthetic reusable-only
+  lock edges, duplicate YAML keys, and every stale inline notification SHA.
+
+=== Dependency review
+
+The v0.5.1 release is a metadata correction. The release notes and commit
+diff show no Zig/Idris2 source change; the action downloads the same
+SHA-256-pinned musl binaries as v0.5.0. The release asset digests match the
+action's pins:
+
+* x86_64: `2683da8f619dd5f310c9f6884da39e825c807c2c86a6319c19aba39b27f9c5c9`
+* aarch64: `a58138308fb9832e1ceb551a12f1b04e591dc38ba5fd336c9acfb3f263161f29`
+
+The v0.5.1 tag peels to commit `e384daf6167a7a7567642d6a62060106244d2413`.
+The commit is GitHub-verified. The annotated tag object itself reports
+`unsigned`; this audit did not create or move the tag.
+
+=== Review/app feedback
+
+PR #24 had no human reviews and no review threads. CodeRabbit skipped review
+because the author was a bot. GitGuardian and Semgrep reported success;
+CodeQL reported neutral. Those app checks do not substitute for the missing
+required `scan / gitleaks` job.
+
+PR #25 received actionable automated review findings. The initial head
+`3106fca2` was corrected before merge:
+
+* Codex: remove the synthetic `actions/checkout` edge from the reusable-only
+  Secret Scanner lock entry; `gh-actions-lock` v0.4.0 cannot follow remote
+  job-level reusable workflows and `--verify` rejects the unused pin.
+* CodeRabbit: parse YAML rather than grepping unquoted `uses:` values, check
+  every notification-action use, and make the D199 handoff precise about
+  squash evidence, resumable per-PR idempotency, source-head revalidation,
+  authorship limits, and GraphQL signature fields.
+
+CodeRabbit also pushed autofix commit `60e9736` to the PR branch. REST reports
+that commit as `unsigned`; the estate signing policy forbids bot pushes to PR
+branches. This session did not push it. The follow-up signed commit preserves
+the intent of its docstring in the replacement Python checker, and
+`.coderabbit.yaml` disables CodeRabbit's code-changing finishing touches
+(`docstrings`, `unit_tests`, `autofix`, `fix_ci`, `resolve_merge_conflict`).
+That repository setting does not reduce the App's permissions or disable a
+separately enabled Autopilot task. The unsigned commit remains in the PR
+history and must be considered by the merge gate; no force-push or admin
+bypass is used to hide it.
+
+=== Merge path
+
+This session may push only `arena/1e24712e-github`. PR #24 was merged by the
+owner before the repair landed, so PR #25 is a follow-up repair to `main`,
+not a replacement for an open PR. No admin bypass, force-push, or
+required-context removal is used by this session.
+
+The conflict with merged PR #24 was reconciled without rewriting history:
+the two conflicting files were temporarily aligned with `main`, GitHub's
+`updatePullRequestBranch` MERGE created verified merge commit `5aba1a4`, and
+a follow-up signed commit reapplied the repaired lockfile and inline SHA.
+
+== 2. Issue #13 / D199
+
+D199 adopts automated rebase-onto-base recovery after squash merges. The
+appropriate estate-wide service is the `cicd-squabbler` GitHub App webhook
+leg, not a community-health workflow in this repository. The App rollout is
+already owner-ruled in https://github.com/hyperpolymath/cicd-squabbler/issues/122[cicd-squabbler#122]
+(D266/D267: all repositories, owned compute). The webhook leg is still absent
+on `main`.
+
+A precise implementation and verification handoff is recorded in
+`docs/handoffs/D199-post-squash-stack-recovery.adoc`. No deployment is claimed.
+The signing policy rules out the naive implementation: a bot must not
+force-push rebased commits, and GitHub rebase-merge replays commits unsigned.
+The handoff therefore specifies signed replacement branches/PRs through
+GitHub's commit API, conflict escalation, fork handling, concurrency, nested
+stacks, and deployment evidence.
+
+== 3. Issue #23, arena scope probe
+
+Issue #23 and https://github.com/hyperpolymath/absolute-zero/issues/192[absolute-zero#192]
+were created by the owner one second apart with identical title/body. The
+owner confirmed in this session that #23 was a one-off Arena access/scope
+test: whether Arena could create issues in the selected repositories. Issue
+creation succeeded. That is evidence of creation capability only, not a
+broader permission or deployment guarantee.
+
+The integration could not write the closing comment or close the issue:
+both REST calls returned HTTP 403 `Resource not accessible by integration`.
+The issue therefore remains open until a permitted actor closes it as
+completed. No product fix is claimed.
+
+== 4. Policy, security, quality, and CI/CD audit
+
+=== Branch policy
+
+Active repository rulesets require linear history, signed commits, and
+`scan / gitleaks` (GitHub Actions integration id 15368). Branch-Floor forbids
+deletion/non-fast-forward. The secret-scan ruleset has an administrator
+bypass actor; this session does not use it. `.github/settings.yml` previously
+advertised merge-commit and rebase-merge as allowed, contrary to the live
+squash-only policy; it is corrected here.
+
+=== K9 / DEED / Hypatia
+
+This repository currently has no committed `.deed` or `.k9.ncl` payloads and
+no fork-governance/Hypatia caller. The canonical K9 and DEED reusable gates
+would report zero files unless `require-files: true` is adopted. That is a
+coverage gap, not a conformance pass. This audit does not claim K9/DEED
+conformance or a Hypatia verdict. The local environment lacked the canonical
+Elixir/Hypatia toolchain, and release-asset downloads were blocked by the
+sandbox egress policy, so no local Hypatia scan was run.
+
+=== GitHub alerts
+
+The integration received HTTP 403 for:
+
+* `repos/hyperpolymath/.github/dependabot/alerts`
+* `repos/hyperpolymath/.github/secret-scanning/alerts`
+* `repos/hyperpolymath/.github/code-scanning/alerts`
+* branch protection and Actions permissions/variables endpoints
+
+Therefore alert counts and dispositions are not established here. The
+visible PR checks are not a substitute for those alert inventories.
+
+=== Technical debt addressed
+
+* Removed stale `mise.toml` runtime/build template from a community-health
+  repository with no local build.
+* Added `CHANGELOG.adoc` for the dependency update and repairs.
+* Normalized SPDX placement in managed workflows.
+* Added regression tests for the workflow coordinate/lock contracts.
+
+=== Remaining work
+
+. Merge PR #25 only after the real required check and the new
+  workflow-contract check pass on its final head. PR #24 is already merged;
+  no closure action remains for it.
+. Close issue #23 as completed with the confirmed purpose, if permitted.
+. Implement and deploy D199 in `hyperpolymath/cicd-squabbler` under its own
+  session; this repository cannot deploy that service.
+. Obtain a token/app permission set that can read security alerts and Actions
+  settings, then audit alert inventories and live posture.
+. Decide whether this community-health repository should adopt repo DEED/K9
+  metadata and fork-governance/Hypatia callers with `require-files: true`.
+. Verify live SMTP delivery separately if `PUSH_EMAIL_ENABLED` is armed; the
+  repository variable endpoint was inaccessible, and this audit did not send
+  email.

@@ -1,0 +1,8 @@
+# Reviewed closure of remote reusable workflows (standards#968, #1290).
+# Produced by scripts/check-reusable-closure.sh --write-baseline; a change
+# here is a change to what this repository trusts, so review the diff.
+# workflow<TAB>reusable-call<TAB>ref reached at startup
+# Secret Scanner run 41543261728: metadatastician/standards reusable blocked
+# by this repo's Actions allowlist; vendored locally at the standards SHA below.
+.github/workflows/secret-scanner.yml	./.github/workflows/secret-scanner-reusable.yml	vendored from metadatastician/standards@8d1a2aab4211493cf42f147f2080f024605797dc
+.github/workflows/secret-scanner-reusable.yml	actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	v7.0.1
